@@ -27,23 +27,32 @@ def _npm_import_impl(repository_ctx):
     if result.return_code:
         fail("failed to inspect content of npm download: \nSTDOUT:\n%s\nSTDERR:\n%s" % (result.stdout, result.stderr))
 
-    repository_ctx.file("BUILD.bazel", """
-load("@aspect_bazel_lib//lib:copy_directory.bzl", "copy_directory")
-load("@aspect_rules_js//js:nodejs_package.bzl", "nodejs_package")
+    nested_folder = result.stdout.rstrip("\n")
 
-# Turn a source directory into a TreeArtifact for RBE-compat
-copy_directory(
-    # The default target in this repository
-    name = "_{name}",
+    # Remove any spaces in the nested folder name
+    if " " in nested_folder:
+        new_nested_folder = nested_folder.replace(" ", "_")
+        if repository_ctx.os.name == "Windows":
+            result = repository_ctx.execute(["move", "extract_tmp\\%s" % nested_folder, "extract_tmp\\%s" % new_nested_folder])
+        else:
+            result = repository_ctx.execute(["mv", "extract_tmp/%s" % nested_folder, "extract_tmp/%s" % new_nested_folder])
+        if result.return_code:
+            fail("failed to rename nested package folder that had spaces: \nSTDOUT:\n%s\nSTDERR:\n%s" % (result.stdout, result.stderr))
+        nested_folder = new_nested_folder
+
+    repository_ctx.file("BUILD.bazel", """
+load("@aspect_rules_js//js:nodejs_package.bzl", "nodejs_package")
+load("@aspect_rules_js//js/private:postinstall.bzl", "postinstall")
+
+postinstall(
+    name = "_{name}_postinstall",
     src = "extract_tmp/{nested_folder}",
-    # The directory name must match the package in order for node to find it under
-    # NODE_PATH=runfiles/[out]
-    out = "{package_name}",
+    package_name = "{package_name}"
 )
 
 nodejs_package(
     name = "{name}",
-    src = "_{name}",
+    src = ":_{name}_postinstall",
     package_name = "{package_name}",
     visibility = ["//visibility:public"],
     deps = {deps},
@@ -59,7 +68,7 @@ alias(
 )
 """.format(
         name = repository_ctx.name,
-        nested_folder = result.stdout.rstrip("\n"),
+        nested_folder = nested_folder,
         package_name = repository_ctx.attr.package,
         deps = [str(d.relative(":pkg")) for d in repository_ctx.attr.deps],
     ))
