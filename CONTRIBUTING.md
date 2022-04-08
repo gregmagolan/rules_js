@@ -35,7 +35,7 @@ echo "build $OVERRIDE" >> ~/.bazelrc
 echo "query $OVERRIDE" >> ~/.bazelrc
 ```
 
-This means that any usage of `@rules_js` on your system will point to this folder.
+This means that any usage of `@aspect_rules_js` on your system will point to this folder.
 
 ## Releasing
 

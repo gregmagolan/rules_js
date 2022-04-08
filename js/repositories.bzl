@@ -8,7 +8,6 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 
 versions = struct(
-    bazel_lib = "0.8.3",
     rules_nodejs = "5.4.0",
     # Users can easily override the typescript version just by declaring their own http_archive
     # named "npm_typescript" prior to calling rules_js_dependencies.
@@ -40,12 +39,13 @@ def rules_js_dependencies():
         urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/{0}/rules_nodejs-core-{0}.tar.gz".format(versions.rules_nodejs)],
     )
 
+    
     maybe(
         http_archive,
         name = "aspect_bazel_lib",
-        sha256 = "b3de6702d48904e8dbe9b45d29e5f07d3258d826981fda87424462b36f16b35f",
-        strip_prefix = "bazel-lib-" + versions.bazel_lib,
-        url = "https://github.com/aspect-build/bazel-lib/archive/refs/tags/v{}.tar.gz".format(versions.bazel_lib),
+        sha256 = "8a83976124dd6dea2fae3a56a57d8659accb42ea4144b7d3ed9a18cbcdac8588",
+        strip_prefix = "bazel-lib-2e213c202932d9c9206c5b4aa4a34a2b4882637b",
+        url = "https://github.com/aspect-build/bazel-lib/archive/2e213c202932d9c9206c5b4aa4a34a2b4882637b.tar.gz",
     )
 
     maybe(
