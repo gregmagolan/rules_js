@@ -65,14 +65,15 @@ _ATTRS_STORE = {
         bazel query ... | grep //:.aspect_rules_js | grep -v /dir | grep -v /pkg | grep -v /ref
         ```
 
-        1st party deps will typically be versioned 0.0.0 (unless set to another version explicitly in
-        npm_link_package). For example,
+        1st party deps will be named the same as their link label //:.aspect_rules_js/<link label>.
+        For example,
 
         ```
-        //:.aspect_rules_js/node_modules/@mycorp/mylib/0.0.0
+        //:.aspect_rules_js/node_modules/@mycorp/mylib
         ```
 
-        3rd party package store link targets will include the version. For example,
+        3rd party package store link targets imported via npm_import will include the version.
+        For example,
 
         ```
         //:.aspect_rules_js/node_modules/cliui/7.0.4
@@ -84,7 +85,7 @@ _ATTRS_STORE = {
         //:.aspect_rules_js/node_modules/debug/4.3.4_supports-color@8.1.1
         ```
 
-        It could be also be a `github.com` url based version,
+        It could be also be a url based version,
 
         ```
         //:.aspect_rules_js/node_modules/debug/github.com/ngokevin/debug/9742c5f383a6f8046241920156236ade8ec30d53
@@ -101,6 +102,13 @@ _ATTRS_STORE = {
         macro (typically 'node_modules') followed by `/<package>/<version>` where `package`
         matches the `package` attribute in the npm_import of the package and `version` matches the
         `version` attribute.
+
+        Package store link targets names for 1st party packages automatically linked by `npm_link_all_packages`
+        using workspaces will follow the same pattern as 3rd party packages with the version typically defaulting
+        to "0.0.0".
+
+        Package store link targets names for 1st party packages manually linked with `npm_link_package`
+        start with `.aspect_rules_js/` followed by the name passed to the `npm_link_package`.
 
         > In typical usage, a node.js program sometimes requires modules which were
         > never declared as dependencies.
@@ -348,7 +356,6 @@ npm_link_package_direct = rule(
 
 def npm_link_package(
         name,
-        version = "0.0.0",
         root_package = "",
         direct = True,
         src = None,
@@ -371,7 +378,6 @@ def npm_link_package(
         name: The name of the direct link target to create (if linked directly).
             For first-party deps linked across a workspace, the name must match in all packages
             being linked as it is used to derive the virtual store link target name.
-        version: version used to identify the package in the virtual store
         root_package: the root package where the node_modules virtual store is linked to
         direct: whether or not to link a direct dependency in this package
             For 3rd party deps fetched with an npm_import, direct may not be specified if
@@ -407,9 +413,8 @@ def npm_link_package(
         msg = "src may only be specified when linking in the root package '{}'".format(root_package)
         fail(msg)
 
-    store_target_name = "{virtual_store_root}/{name}/{version}".format(
+    store_target_name = "{virtual_store_root}/{name}".format(
         name = name,
-        version = version,
         virtual_store_root = utils.virtual_store_root,
     )
 
